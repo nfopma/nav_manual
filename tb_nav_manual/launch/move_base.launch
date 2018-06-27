@@ -1,0 +1,56 @@
+<launch>
+
+  <!-- 3D sensor and turtlebot_bringup -->
+  <include file="$(find tb_nav_manual)/launch/turtlebot_configuration.launch" />
+
+  <!-- Map server -->
+  <arg name="map_file" default="$(env TURTLEBOT_MAP_FILE)"/>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+  
+  <!-- AMCL -->
+  <arg name="custom_amcl_launch_file" default="$(find turtlebot_navigation)/launch/includes/amcl/$(arg 3d_sensor)_amcl.launch.xml"/>
+  <arg name="initial_pose_x" default="0.0"/> <!-- Use 17.0 for willow's map in simulation -->
+  <arg name="initial_pose_y" default="0.0"/> <!-- Use 17.0 for willow's map in simulation -->
+  <arg name="initial_pose_a" default="0.0"/>
+  <include file="$(arg custom_amcl_launch_file)">
+    <arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <arg name="initial_pose_a" value="$(arg initial_pose_a)"/>
+  </include>
+
+  <!-- move_base: copy pasted from turtlebot_navigation to enable easy changing of plugins -->
+  <include file="$(find turtlebot_navigation)/launch/includes/velocity_smoother.launch.xml"/>
+  <include file="$(find turtlebot_navigation)/launch/includes/safety_controller.launch.xml"/>
+
+  <arg name="odom_frame_id"   default="odom"/>
+  <arg name="base_frame_id"   default="base_footprint"/>
+  <arg name="global_frame_id" default="map"/>
+  <arg name="odom_topic" default="odom" />
+  <arg name="laser_topic" default="scan" />
+  <arg name="custom_param_file" default="$(find turtlebot_navigation)/param/dummy.yaml"/>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find tb_nav_manual)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find tb_nav_manual)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find tb_nav_manual)/param/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find tb_nav_manual)/param/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find tb_nav_manual)/param/dwa_local_planner_params.yaml" command="load" />
+    <rosparam file="$(find tb_nav_manual)/param/move_base_params.yaml" command="load" />
+    <rosparam file="$(find tb_nav_manual)/param/global_planner_params.yaml" command="load" />
+    <rosparam file="$(find tb_nav_manual)/param/navfn_global_planner_params.yaml" command="load" />
+    <!-- external params file that could be loaded into the move_base namespace -->
+    <rosparam file="$(arg custom_param_file)" command="load" />
+
+    <!-- reset frame_id parameters using user input data -->
+    <param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
+    <param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+    <param name="local_costmap/global_frame" value="$(arg odom_frame_id)"/>
+    <param name="local_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+    <param name="DWAPlannerROS/global_frame_id" value="$(arg odom_frame_id)"/>
+
+    <remap from="cmd_vel" to="navigation_velocity_smoother/raw_cmd_vel"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
+    <remap from="scan" to="$(arg laser_topic)"/>
+  </node>
+
+</launch>

@@ -1,0 +1,20 @@
+<launch>
+
+  <!-- LAUNCH THE 3D SENSOR
+  This uses the launchfiles from turtlebot bringup and launches the asus xtion pro through the openni2 package. It also starts the depthimagetolaserscan node(let?). I could change this to 3dsensor_improved.launch to launch the more tunable kinect_laserscan node. -->
+
+  <arg name="3d_sensor" default="$(env TURTLEBOT_3D_SENSOR)"/>  <!-- r200, kinect, asus_xtion_pro -->
+  <include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
+    <arg name="rgb_processing" value="false" />
+    <arg name="depth_registration" value="false" />
+    <arg name="depth_processing" value="false" />
+
+    <!-- We must specify an absolute topic name because if not it will be prefixed by "$(arg camera)".
+         Probably is a bug in the nodelet manager: https://github.com/ros/nodelet_core/issues/7 -->
+    <arg name="scan_topic" value="/scan" />
+  </include>
+
+  <!-- START THE ODOMETRY and transform configuration (by using the minimal.launch file of turtlebot_bringup) -->
+  <include file="$(find turtlebot_bringup)/launch/minimal.launch" />
+
+</launch>
